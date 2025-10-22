@@ -12,7 +12,7 @@ from security import hash_password, verify_password, create_access_token, decode
 from pydantic import EmailStr  # pyright: ignore[reportMissingImports]
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/token")
 router = APIRouter()
 
 
