@@ -58,11 +58,10 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:3000"
     ],
-    # Broad regex to cover all deployed frontends and local dev
-    allow_origin_regex=r"^https?://.*$",
+    allow_origin_regex=r"https://.*\\.railway\\.app|http://localhost(:\\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["Authorization", "Content-Type", "X-Requested-With", "Accept"],
     expose_headers=["*"],
 )
 
