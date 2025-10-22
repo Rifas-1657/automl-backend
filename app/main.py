@@ -3,6 +3,8 @@ import sys
 import traceback
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 # Ensure app package on path
@@ -49,27 +51,40 @@ async def startup_event():
         except Exception:
             pass
 
-# 2) CORS (Vite + localhost + all)
-# 2) CORS Configuration - COMPREHENSIVE FIX
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "https://automl-frontend-production.up.railway.app",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-    max_age=600,
-)
+# 2) Custom CORS middleware (overrides and guarantees headers)
+ALLOWED_ORIGINS = [
+    "https://automl-frontend-production.up.railway.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 
-# 3) CORS preflight handled by CORSMiddleware
-# Add this after your CORS middleware but before routers
-@app.get("/api/test-cors")
-def test_cors():
-    return {"message": "CORS test successful", "cors_working": True}
+env_allowed = os.getenv("ALLOWED_ORIGINS")
+if env_allowed:
+    try:
+        ALLOWED_ORIGINS = [o.strip() for o in env_allowed.split(",") if o.strip()]
+    except Exception:
+        pass
+
+@app.middleware("http")
+async def custom_cors_middleware(request: Request, call_next):
+    origin = request.headers.get("origin")
+    # Handle preflight early
+    if request.method == "OPTIONS":
+        response = JSONResponse(content={"message": "OK"}, status_code=200)
+    else:
+        response = await call_next(request)
+
+    if origin in ALLOWED_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
+    response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Accept, Origin, User-Agent, Cache-Control, X-Requested-With"
+    response.headers["Access-Control-Expose-Headers"] = "*"
+    response.headers["Vary"] = "Origin"
+    return response
+
+# 3) CORS preflight handled by custom middleware
+
 # 4) Health endpoints
 @app.get("/api/health")
 def api_health():
@@ -89,6 +104,14 @@ def api_health():
 @app.get("/health")  # keep old path too
 def health_legacy():
     return {"status": "ok"}
+
+# Debug headers endpoint
+@app.get("/api/debug-headers")
+async def debug_headers(request: Request):
+    return {
+        "request_headers": dict(request.headers),
+        "allowed_origins": ALLOWED_ORIGINS,
+    }
 
 # 4) Routers (with logging)
 try:
@@ -303,18 +326,6 @@ if not _auth_router_loaded:
         print("Auth fallback endpoints registered.")
     except Exception as e:
         print(f"Failed to register auth fallbacks: {e}")
-
-@app.middleware("http")
-async def add_railway_cors_headers(request, call_next):
-    response = await call_next(request)
-    
-    # Add Railway-specific CORS headers
-    response.headers["Access-Control-Allow-Origin"] = "https://automl-frontend-production.up.railway.app"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    
-    return response
 
 if __name__ == "__main__":
     import uvicorn
