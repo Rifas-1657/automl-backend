@@ -10,10 +10,7 @@ from routers.auth import get_current_user
 
 router = APIRouter()
 
-# ADD THIS: Explicit CORS for account routes
-@router.options("/account")
-async def account_options():
-    return {"message": "OK"}
+# Let CORSMiddleware handle preflight; no custom OPTIONS route
 
 @router.get("/account", response_model=UserOut)
 def get_account(request: Request, response: Response, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

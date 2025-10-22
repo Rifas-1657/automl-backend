@@ -54,21 +54,16 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://automl-frontend-production.up.railway.app",
-        "https://automl-frontend-production.railway.app",
         "http://localhost:5173",
-        "http://localhost:3000"
+        "http://127.0.0.1:5173",
     ],
-    allow_origin_regex=r"https://.*\\.railway\\.app|http://localhost(:\\d+)?",
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["Authorization", "Content-Type", "X-Requested-With", "Accept"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["*"],
     expose_headers=["*"],
 )
 
-# 3) CORS preflight handler
-@app.options("/{full_path:path}")
-async def options_handler(full_path: str):
-    return {"message": "OK"}
+# 3) CORS preflight handled by CORSMiddleware
 
 # 4) Health endpoints
 @app.get("/api/health")
