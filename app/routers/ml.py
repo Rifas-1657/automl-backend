@@ -1004,8 +1004,8 @@ async def run_automl(
     try:
         # Get dataset info
         dataset_query = text("""
-            SELECT id, filename, file_path, file_size, created_at FROM datasets 
-            WHERE id = :dataset_id AND uploaded_by = :user_id
+            SELECT id, filename, filepath AS file_path, filesize AS file_size, uploaded_at AS created_at FROM datasets 
+            WHERE id = :dataset_id AND user_id = :user_id
         """)
         dataset_data = db.execute(dataset_query, {"dataset_id": dataset_id, "user_id": current_user.id}).first()
         

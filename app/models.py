@@ -20,9 +20,10 @@ class Dataset(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, nullable=False)  # ✅ Change uploaded_by to user_id
     filename = Column(String(255), nullable=False)
-    file_path = Column(String(500))
-    file_size = Column(Integer)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # Map to legacy/raw SQL column names used across routers
+    file_path = Column('filepath', String(500))
+    file_size = Column('filesize', Integer)
+    created_at = Column('uploaded_at', DateTime(timezone=True), server_default=func.now())
     
 class TrainedModel(Base):
     __tablename__ = "trained_models"
