@@ -846,6 +846,28 @@ async def make_prediction(
             print(f" Prediction failed: {str(e)}")
             raise HTTPException(status_code=400, detail=f"Prediction failed: {str(e)}")
         
+        # Persist prediction log for audit and reload on back-navigation
+        try:
+            db.execute(text(
+                """
+                INSERT INTO predictions (user_id, dataset_id, model_id, algorithm, input_json, output_json, created_at)
+                VALUES (:user_id, :dataset_id, :model_id, :algorithm, :input_json, :output_json, datetime('now'))
+                """
+            ), {
+                "user_id": current_user.id,
+                "dataset_id": dataset_id,
+                "model_id": getattr(model_data, 'id', None),
+                "algorithm": model_data.algorithm,
+                "input_json": json.dumps(sanitized),
+                "output_json": json.dumps(prediction_result)
+            })
+            db.commit()
+        except Exception:
+            try:
+                db.rollback()
+            except Exception:
+                pass
+
         return PredictionResponse(
             prediction=prediction_result["prediction"],
             confidence=prediction_result["confidence"],

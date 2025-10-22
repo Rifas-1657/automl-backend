@@ -9,8 +9,7 @@ from db import Base, engine
 def create_tables():
     print("Creating application tables...")
     try:
-        # Drop and recreate all tables to update the schema
-        Base.metadata.drop_all(bind=engine)
+        # Create tables if not exist; avoid destructive drops in production
         Base.metadata.create_all(bind=engine)
         print("All tables created successfully!")
         

@@ -37,3 +37,16 @@ class TrainedModel(Base):
     metrics = Column(Text)  # JSON string
     model_path = Column(String(500))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class PredictionLog(Base):
+    __tablename__ = "predictions"
+    __table_args__ = {'extend_existing': True}
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False)
+    dataset_id = Column(Integer, nullable=False)
+    model_id = Column(Integer, nullable=True)
+    algorithm = Column(String(100), nullable=True)
+    input_json = Column(Text)
+    output_json = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
