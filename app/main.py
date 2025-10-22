@@ -69,20 +69,39 @@ if env_allowed:
 @app.middleware("http")
 async def custom_cors_middleware(request: Request, call_next):
     origin = request.headers.get("origin")
-    # Handle preflight early
+    # Handle preflight early and guarantee headers on errors
     if request.method == "OPTIONS":
         response = JSONResponse(content={"message": "OK"}, status_code=200)
     else:
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            try:
+                from fastapi import HTTPException
+                if isinstance(exc, HTTPException):
+                    response = JSONResponse(content={"detail": getattr(exc, "detail", "Error")}, status_code=getattr(exc, "status_code", 500))
+                else:
+                    response = JSONResponse(content={"detail": "Internal Server Error"}, status_code=500)
+            except Exception:
+                response = JSONResponse(content={"detail": "Internal Server Error"}, status_code=500)
 
     # Reflect allowed origins dynamically (Railway subdomains + local dev)
+    # Always set A-C-A-O (wildcard if origin is missing/not matched)
+    allowed = False
     if origin:
-        if (origin in ALLOWED_ORIGINS
-                or origin.endswith(".railway.app")
-                or origin.startswith("http://localhost")
-                or origin.startswith("http://127.0.0.1")):
+        if (
+            origin in ALLOWED_ORIGINS
+            or origin.endswith(".railway.app")
+            or origin.startswith("http://localhost")
+            or origin.startswith("http://127.0.0.1")
+        ):
             response.headers["Access-Control-Allow-Origin"] = origin
-    response.headers["Access-Control-Allow-Credentials"] = "true"
+            allowed = True
+    if not allowed:
+        response.headers["Access-Control-Allow-Origin"] = "*"
+    # Only advertise credentials when echoing an explicit origin
+    if allowed:
+        response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
     response.headers["Access-Control-Allow-Headers"] = "*"
     response.headers["Access-Control-Expose-Headers"] = "*"
