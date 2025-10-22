@@ -133,6 +133,20 @@ try:
 except Exception as e:
     print(f"Visualization router failed: {e}")
 
+# Diagnostics endpoint to see what loaded in prod
+@app.get("/api/debug/routers")
+def debug_routers():
+    return {
+        "auth_router_loaded": _auth_router_loaded,
+        "endpoints": [
+            {
+                "name": r.name,
+                "path": r.path,
+                "methods": list(r.methods or []),
+            } for r in app.routes
+        ],
+    }
+
 # 5) Root and favicon endpoints
 @app.get("/")
 def root():
