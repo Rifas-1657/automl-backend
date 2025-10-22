@@ -54,6 +54,7 @@ async def startup_event():
 # 2) Custom CORS middleware (overrides and guarantees headers)
 ALLOWED_ORIGINS = [
     "https://automl-frontend-production.up.railway.app",
+    "https://web-production-8a68e.up.railway.app",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
