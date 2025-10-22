@@ -1,30 +1,15 @@
-# Core FastAPI dependencies
+# Core FastAPI only - NO ML packages
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 python-multipart==0.0.6
 
-# Database
+# Database only
 sqlalchemy==2.0.23
-alembic==1.12.1
 
-# Authentication
+# Authentication only
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
 
-# Data processing (compatible versions)
-pandas==2.1.4
-numpy==1.24.3
-scikit-learn==1.3.2
-joblib==1.3.2
-
-# Visualization (required by ml_utils/visualization)
-plotly==5.17.0
-matplotlib==3.8.2
-seaborn==0.13.0
-
-# Scientific (stabilizes scikit-learn builds)
-scipy==1.11.4
-
-# Environment
+# Environment only
 python-dotenv==1.0.0

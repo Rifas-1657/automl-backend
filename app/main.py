@@ -82,19 +82,19 @@ try:
 except Exception as e:
     print(f"Auth router failed: {e}")
 
-try:
-    from routers.datasets import router as datasets_router
-    app.include_router(datasets_router, prefix="/api", tags=["datasets"])
-    print("Datasets router loaded successfully!")
-except Exception as e:
-    print(f"Datasets router failed: {e}")
+# try:
+#     from routers.datasets import router as datasets_router
+#     app.include_router(datasets_router, prefix="/api", tags=["datasets"])
+#     print("Datasets router loaded successfully!")
+# except Exception as e:
+#     print(f"Datasets router failed: {e}")
 
-try:
-    from routers.ml import router as ml_router
-    app.include_router(ml_router, prefix="/api", tags=["ml"])
-    print("ML router loaded successfully!")
-except Exception as e:
-    print(f"ML router failed: {e}")
+# try:
+#     from routers.ml import router as ml_router
+#     app.include_router(ml_router, prefix="/api", tags=["ml"])
+#     print("ML router loaded successfully!")
+# except Exception as e:
+#     print(f"ML router failed: {e}")
 
 try:
     from routers.account import router as account_router
@@ -110,12 +110,12 @@ try:
 except Exception as e:
     print(f"History router failed: {e}")
 
-try:
-    from routers.visualization import router as visualization_router
-    app.include_router(visualization_router, prefix="/api", tags=["visualization"])
-    print("Visualization router loaded successfully!")
-except Exception as e:
-    print(f"Visualization router failed: {e}")
+# try:
+#     from routers.visualization import router as visualization_router
+#     app.include_router(visualization_router, prefix="/api", tags=["visualization"])
+#     print("Visualization router loaded successfully!")
+# except Exception as e:
+#     print(f"Visualization router failed: {e}")
 
 # 5) Root and favicon endpoints
 @app.get("/")
