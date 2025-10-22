@@ -50,13 +50,15 @@ async def startup_event():
 # 2) CORS (Vite + localhost + all)
 app.add_middleware(
     CORSMiddleware,
-   allow_origins=[
-    "https://automl-frontend-production.up.railway.app",
-    "http://localhost:5173"
-],  # Allow all origins for development
+    allow_origins=[
+        "https://automl-frontend-production.up.railway.app",
+        "https://automl-frontend-production.railway.app",
+        "http://localhost:5173",
+        "http://localhost:3000"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"]
+    ,allow_headers=["*"]
 )
 
 # 3) CORS preflight handler

@@ -77,6 +77,8 @@ class PredictionResponse(BaseModel):
     confidence: Optional[float]
     input_features: Dict[str, Any]
     algorithm_used: str
+    metrics: Optional[Dict[str, Any]] = None
+    cross_validation_score: Optional[Dict[str, Any]] = None
 
 class VisualizationResponse(BaseModel):
     plot_files: List[str]
@@ -821,6 +823,19 @@ async def make_prediction(
             # Be lenient on validation errors; pipeline will fallback, but we try to notify above
             pass
 
+        # Extract stored training metrics for display alongside prediction
+        stored_metrics: Optional[Dict[str, Any]] = None
+        stored_cv: Optional[Dict[str, Any]] = None
+        try:
+            metrics_blob = json.loads(model_data.metrics) if getattr(model_data, 'metrics', None) else None
+            if isinstance(metrics_blob, dict):
+                # Our training stores under keys 'metrics' and 'cross_validation_score'
+                stored_metrics = metrics_blob.get('metrics') if isinstance(metrics_blob.get('metrics'), dict) else metrics_blob.get('metrics')
+                stored_cv = metrics_blob.get('cross_validation_score') if isinstance(metrics_blob.get('cross_validation_score'), dict) else None
+        except Exception:
+            stored_metrics = None
+            stored_cv = None
+
         # Make prediction
         try:
             prediction_result = pipeline.predict(sanitized)
@@ -835,7 +850,9 @@ async def make_prediction(
             prediction=prediction_result["prediction"],
             confidence=prediction_result["confidence"],
             input_features=sanitized,
-            algorithm_used=model_data.algorithm
+            algorithm_used=model_data.algorithm,
+            metrics=stored_metrics,
+            cross_validation_score=stored_cv
         )
         
     except Exception as e:
