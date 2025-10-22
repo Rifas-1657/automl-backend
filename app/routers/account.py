@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -16,7 +16,9 @@ async def account_options():
     return {"message": "OK"}
 
 @router.get("/account", response_model=UserOut)
-def get_account(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_account(response: Response, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Explicitly reflect CORS on this route as a safety net
+    response.headers["Access-Control-Allow-Origin"] = "*"
     return current_user
 
 @router.put("/account", response_model=UserOut)
