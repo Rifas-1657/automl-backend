@@ -75,11 +75,16 @@ async def custom_cors_middleware(request: Request, call_next):
     else:
         response = await call_next(request)
 
-    if origin in ALLOWED_ORIGINS:
-        response.headers["Access-Control-Allow-Origin"] = origin
+    # Reflect allowed origins dynamically (Railway subdomains + local dev)
+    if origin:
+        if (origin in ALLOWED_ORIGINS
+                or origin.endswith(".railway.app")
+                or origin.startswith("http://localhost")
+                or origin.startswith("http://127.0.0.1")):
+            response.headers["Access-Control-Allow-Origin"] = origin
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
-    response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Accept, Origin, User-Agent, Cache-Control, X-Requested-With"
+    response.headers["Access-Control-Allow-Headers"] = "*"
     response.headers["Access-Control-Expose-Headers"] = "*"
     response.headers["Vary"] = "Origin"
     return response
