@@ -1,5 +1,6 @@
 import os
 import sys
+import traceback
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -96,56 +97,84 @@ try:
     print("Auth router loaded successfully!")
     _auth_router_loaded = True
 except Exception as e:
-    print(f"Auth router failed: {e}")
+    print(f"Auth router failed: {e}\n{traceback.format_exc()}")
 
 try:
     from routers.datasets import router as datasets_router
     app.include_router(datasets_router, prefix="/api", tags=["datasets"])
     print("Datasets router loaded successfully!")
 except Exception as e:
-    print(f"Datasets router failed: {e}")
+    print(f"Datasets router failed: {e}\n{traceback.format_exc()}")
 
 try:
     from routers.ml import router as ml_router
     app.include_router(ml_router, prefix="/api", tags=["ml"])
     print("ML router loaded successfully!")
 except Exception as e:
-    print(f"ML router failed: {e}")
+    print(f"ML router failed: {e}\n{traceback.format_exc()}")
 
 try:
     from routers.account import router as account_router
     app.include_router(account_router, prefix="/api", tags=["account"])
     print("Account router loaded successfully!")
 except Exception as e:
-    print(f"Account router failed: {e}")
+    print(f"Account router failed: {e}\n{traceback.format_exc()}")
 
 try:
     from routers.history import router as history_router
     app.include_router(history_router, prefix="/api", tags=["history"])
     print("History router loaded successfully!")
 except Exception as e:
-    print(f"History router failed: {e}")
+    print(f"History router failed: {e}\n{traceback.format_exc()}")
 
 try:
     from routers.visualization import router as visualization_router
     app.include_router(visualization_router, prefix="/api", tags=["visualization"])
     print("Visualization router loaded successfully!")
 except Exception as e:
-    print(f"Visualization router failed: {e}")
+    print(f"Visualization router failed: {e}\n{traceback.format_exc()}")
 
 # Diagnostics endpoint to see what loaded in prod
 @app.get("/api/debug/routers")
 def debug_routers():
-    return {
-        "auth_router_loaded": _auth_router_loaded,
-        "endpoints": [
-            {
-                "name": r.name,
-                "path": r.path,
-                "methods": list(r.methods or []),
-            } for r in app.routes
-        ],
-    }
+    endpoints = []
+    for r in app.routes:
+        try:
+            # Starlette Mount/Route objects vary; safely access attributes
+            path = getattr(r, 'path', getattr(r, 'path_format', str(r)))
+            methods = list(getattr(r, 'methods', []) or [])
+            name = getattr(r, 'name', type(r).__name__)
+            endpoints.append({
+                "name": name,
+                "path": path,
+                "methods": methods,
+                "type": type(r).__name__,
+            })
+        except Exception as e:
+            endpoints.append({"error": f"{type(r).__name__}: {e}"})
+    return {"auth_router_loaded": _auth_router_loaded, "endpoints": endpoints}
+
+# Attempt dynamic import checks to report exact failures
+@app.get("/api/debug/imports")
+def debug_imports():
+    import importlib
+    modules = [
+        'routers.auth',
+        'routers.datasets',
+        'routers.ml',
+        'routers.account',
+        'routers.history',
+        'routers.visualization',
+    ]
+    results = {}
+    for m in modules:
+        try:
+            importlib.invalidate_caches()
+            importlib.import_module(m)
+            results[m] = {"ok": True}
+        except Exception as e:
+            results[m] = {"ok": False, "error": str(e), "traceback": traceback.format_exc()}
+    return results
 
 # 5) Root and favicon endpoints
 @app.get("/")
