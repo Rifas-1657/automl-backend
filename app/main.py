@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from db import SessionLocal, engine
+from create_tables import create_tables
 from sqlalchemy import text, inspect
 
 app = FastAPI(title="AutoML Web App API", version="0.1.0")
@@ -17,6 +18,12 @@ app = FastAPI(title="AutoML Web App API", version="0.1.0")
 async def startup_event():
     print("Starting FastAPI backend...")
     try:
+        # Ensure DB tables exist
+        try:
+            create_tables()
+        except Exception as e:
+            print(f"Auto table creation failed: {e}")
+
         db = SessionLocal()
         db.execute(text("SELECT 1"))
 
@@ -82,19 +89,19 @@ try:
 except Exception as e:
     print(f"Auth router failed: {e}")
 
-# try:
-#     from routers.datasets import router as datasets_router
-#     app.include_router(datasets_router, prefix="/api", tags=["datasets"])
-#     print("Datasets router loaded successfully!")
-# except Exception as e:
-#     print(f"Datasets router failed: {e}")
+try:
+    from routers.datasets import router as datasets_router
+    app.include_router(datasets_router, prefix="/api", tags=["datasets"])
+    print("Datasets router loaded successfully!")
+except Exception as e:
+    print(f"Datasets router failed: {e}")
 
-# try:
-#     from routers.ml import router as ml_router
-#     app.include_router(ml_router, prefix="/api", tags=["ml"])
-#     print("ML router loaded successfully!")
-# except Exception as e:
-#     print(f"ML router failed: {e}")
+try:
+    from routers.ml import router as ml_router
+    app.include_router(ml_router, prefix="/api", tags=["ml"])
+    print("ML router loaded successfully!")
+except Exception as e:
+    print(f"ML router failed: {e}")
 
 try:
     from routers.account import router as account_router
@@ -110,12 +117,12 @@ try:
 except Exception as e:
     print(f"History router failed: {e}")
 
-# try:
-#     from routers.visualization import router as visualization_router
-#     app.include_router(visualization_router, prefix="/api", tags=["visualization"])
-#     print("Visualization router loaded successfully!")
-# except Exception as e:
-#     print(f"Visualization router failed: {e}")
+try:
+    from routers.visualization import router as visualization_router
+    app.include_router(visualization_router, prefix="/api", tags=["visualization"])
+    print("Visualization router loaded successfully!")
+except Exception as e:
+    print(f"Visualization router failed: {e}")
 
 # 5) Root and favicon endpoints
 @app.get("/")
