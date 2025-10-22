@@ -23,13 +23,16 @@ def on_startup():
 
 @router.post("/signup", response_model=UserOut)
 def signup(payload: UserCreate, db: Session = Depends(get_db)):
+    # Normalize inputs to avoid duplicates due to case/whitespace
+    email_norm = str(payload.email).strip().lower()
+    username_norm = payload.username.strip()
     # Check for existing users using raw SQL to avoid full_name column issues
     existing_query = text("""
         SELECT id FROM users 
         WHERE email = :email OR username = :username
         LIMIT 1
     """)
-    existing = db.execute(existing_query, {"email": str(payload.email), "username": payload.username}).first()
+    existing = db.execute(existing_query, {"email": email_norm, "username": username_norm}).first()
     
     if existing:
         raise HTTPException(status_code=400, detail="Email or username already registered")
@@ -39,13 +42,13 @@ def signup(payload: UserCreate, db: Session = Depends(get_db)):
     
     # Try to insert with full_name column first, fallback if it doesn't exist
     try:
-        insert_query = text("""
+    insert_query = text("""
             INSERT INTO users (email, username, hashed_password, full_name, created_at)
             VALUES (:email, :username, :hashed_password, NULL, datetime('now'))
         """)
         result = db.execute(insert_query, {
-            "email": str(payload.email),
-            "username": payload.username,
+            "email": email_norm,
+            "username": username_norm,
             "hashed_password": hashed_pwd
         })
     except Exception:
@@ -55,8 +58,8 @@ def signup(payload: UserCreate, db: Session = Depends(get_db)):
             VALUES (:email, :username, :hashed_password, datetime('now'))
         """)
         result = db.execute(insert_query, {
-            "email": str(payload.email),
-            "username": payload.username,
+            "email": email_norm,
+            "username": username_norm,
             "hashed_password": hashed_pwd
         })
     
@@ -85,10 +88,11 @@ def signup(payload: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     # Use raw SQL to avoid full_name column issues
+    username_norm = form_data.username.strip()
     user_query = text("""
         SELECT id, username, hashed_password FROM users WHERE username = :username
     """)
-    user_data = db.execute(user_query, {"username": form_data.username}).first()
+    user_data = db.execute(user_query, {"username": username_norm}).first()
     
     if not user_data or not verify_password(form_data.password, user_data.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
