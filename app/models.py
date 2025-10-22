@@ -18,12 +18,12 @@ class Dataset(Base):
     __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False)  # ✅ Change uploaded_by to user_id
     filename = Column(String(255), nullable=False)
     file_path = Column(String(500))
     file_size = Column(Integer)
-    uploaded_by = Column(Integer)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-
+    
 class TrainedModel(Base):
     __tablename__ = "trained_models"
     __table_args__ = {'extend_existing': True}
