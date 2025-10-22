@@ -1,15 +1,28 @@
-# Core FastAPI only - NO ML packages
+# Core FastAPI dependencies
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 python-multipart==0.0.6
 
-# Database only
+# Database (Python 3.11 compatible)
 sqlalchemy==2.0.23
+alembic==1.12.1
 
-# Authentication only
+# Authentication
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
 
-# Environment only
+# Data processing & ML (Python 3.11 compatible)
+pandas==2.1.4
+numpy==1.24.3
+scipy==1.11.4
+scikit-learn==1.3.2
+joblib==1.3.2
+
+# Visualization
+plotly==5.17.0
+matplotlib==3.8.2
+seaborn==0.13.0
+
+# Environment
 python-dotenv==1.0.0
