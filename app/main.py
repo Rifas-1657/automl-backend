@@ -12,6 +12,7 @@ from create_tables import create_tables
 from sqlalchemy import text, inspect
 
 app = FastAPI(title="AutoML Web App API", version="0.1.0")
+_auth_router_loaded = False
 
 # 1) Explicit startup log + robust DB check
 @app.on_event("startup")
@@ -93,6 +94,7 @@ try:
     from routers.auth import router as auth_router
     app.include_router(auth_router, prefix="/api", tags=["auth"])
     print("Auth router loaded successfully!")
+    _auth_router_loaded = True
 except Exception as e:
     print(f"Auth router failed: {e}")
 
@@ -154,6 +156,115 @@ if os.path.exists("storage"):
     app.mount("/api/files", StaticFiles(directory="storage"), name="files")
 if os.path.exists("storage/uploads"):
     app.mount("/api/uploads", StaticFiles(directory="storage/uploads"), name="uploads")
+
+# Fallback auth endpoints if the auth router failed to import
+if not _auth_router_loaded:
+    try:
+        from pydantic import BaseModel
+        from fastapi import Depends, HTTPException, status
+        from fastapi.security import OAuth2PasswordRequestForm
+        from db import SessionLocal
+        from sqlalchemy import text
+
+        class FallbackSignup(BaseModel):
+            email: str
+            username: str
+            password: str
+
+        @app.post("/api/signup")
+        def fallback_signup(payload: FallbackSignup):
+            db = SessionLocal()
+            try:
+                email_norm = str(payload.email).strip().lower()
+                username_norm = payload.username.strip()
+
+                existing = db.execute(text(
+                    """
+                    SELECT id FROM users 
+                    WHERE email = :email OR username = :username
+                    LIMIT 1
+                    """
+                ), {"email": email_norm, "username": username_norm}).first()
+                if existing:
+                    raise HTTPException(status_code=400, detail="Email or username already registered")
+
+                from security import hash_password
+                hashed_pwd = hash_password(payload.password)
+
+                try:
+                    insert_query = text(
+                        """
+                        INSERT INTO users (email, username, hashed_password, full_name, created_at)
+                        VALUES (:email, :username, :hashed_password, NULL, datetime('now'))
+                        """
+                    )
+                    result = db.execute(insert_query, {
+                        "email": email_norm,
+                        "username": username_norm,
+                        "hashed_password": hashed_pwd
+                    })
+                except Exception:
+                    insert_query = text(
+                        """
+                        INSERT INTO users (email, username, hashed_password, created_at)
+                        VALUES (:email, :username, :hashed_password, datetime('now'))
+                        """
+                    )
+                    result = db.execute(insert_query, {
+                        "email": email_norm,
+                        "username": username_norm,
+                        "hashed_password": hashed_pwd
+                    })
+
+                user_id = result.lastrowid
+                db.commit()
+
+                user_query = text("""
+                    SELECT id, email, username, created_at FROM users WHERE id = :user_id
+                """)
+                user_data = db.execute(user_query, {"user_id": user_id}).first()
+                if not user_data:
+                    raise HTTPException(status_code=500, detail="Failed to create user")
+
+                return {
+                    "id": user_data.id,
+                    "email": user_data.email,
+                    "username": user_data.username,
+                    "full_name": None,
+                    "created_at": user_data.created_at,
+                }
+            finally:
+                try:
+                    db.close()
+                except Exception:
+                    pass
+
+        @app.post("/api/token")
+        def fallback_token(form_data: OAuth2PasswordRequestForm = Depends()):
+            db = SessionLocal()
+            try:
+                username_norm = form_data.username.strip()
+                user_query = text("""
+                    SELECT id, username, hashed_password FROM users WHERE username = :username
+                """)
+                user_data = db.execute(user_query, {"username": username_norm}).first()
+                if not user_data:
+                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+                from security import verify_password, create_access_token
+                if not verify_password(form_data.password, user_data.hashed_password):
+                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+
+                token = create_access_token(user_id=user_data.id)
+                return {"access_token": token, "token_type": "bearer"}
+            finally:
+                try:
+                    db.close()
+                except Exception:
+                    pass
+        print("Auth fallback endpoints registered.")
+    except Exception as e:
+        print(f"Failed to register auth fallbacks: {e}")
 
 if __name__ == "__main__":
     import uvicorn
