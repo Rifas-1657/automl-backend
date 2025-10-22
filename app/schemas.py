@@ -86,9 +86,7 @@ class PredictionResponse(BaseModel):
     input_features: Dict[str, Any]
     algorithm_used: str
 
-class VisualizationResponse(BaseModel):
-    plot_files: List[str]
-    plot_urls: List[str]
+# VisualizationResponse removed with visualization feature
 
 class AlgorithmRecommendation(BaseModel):
     name: str

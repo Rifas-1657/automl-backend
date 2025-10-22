@@ -127,12 +127,7 @@ try:
 except Exception as e:
     print(f"History router failed: {e}\n{traceback.format_exc()}")
 
-try:
-    from routers.visualization import router as visualization_router
-    app.include_router(visualization_router, prefix="/api", tags=["visualization"])
-    print("Visualization router loaded successfully!")
-except Exception as e:
-    print(f"Visualization router failed: {e}\n{traceback.format_exc()}")
+# Visualization feature removed
 
 # Diagnostics endpoint to see what loaded in prod
 @app.get("/api/debug/routers")
