@@ -42,7 +42,7 @@ def signup(payload: UserCreate, db: Session = Depends(get_db)):
     
     # Try to insert with full_name column first, fallback if it doesn't exist
     try:
-    insert_query = text("""
+        insert_query = text("""
             INSERT INTO users (email, username, hashed_password, full_name, created_at)
             VALUES (:email, :username, :hashed_password, NULL, datetime('now'))
         """)
